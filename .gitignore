@@ -1,0 +1,17 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Large original media (keep compressed versions only)
+assets/gifs/*
+!assets/gifs/.gitkeep
+
+# Local dev
+*.log
+node_modules/
+dist/
+.env
+
+# Optional future build artifacts
+*.zip
+backup/
