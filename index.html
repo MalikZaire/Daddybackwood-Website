@@ -141,12 +141,24 @@
             opacity: 0;
         }
 
+        /* Short, subtle drift on teaser photos so the section feels alive (no video files needed) */
         .teaser-img {
-            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: teaserDrift 9s ease-in-out infinite alternate;
+            will-change: transform;
         }
-        
+        .content-card:nth-child(2) .teaser-img { animation-delay: -2s; }
+        .content-card:nth-child(3) .teaser-img { animation-delay: -4s; }
+        .content-card:nth-child(4) .teaser-img { animation-delay: -6s; }
+        .content-card:nth-child(5) .teaser-img { animation-delay: -3s; }
+        @keyframes teaserDrift {
+            from { transform: scale(1) translate(0, 0); }
+            to { transform: scale(1.08) translate(-1.5%, 1%); }
+        }
         .content-card:hover .teaser-img {
-            transform: scale(1.08);
+            animation-play-state: paused;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .teaser-img { animation: none; }
         }
 
         .gold-border {
