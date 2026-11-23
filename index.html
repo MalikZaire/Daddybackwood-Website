@@ -238,6 +238,16 @@
         .service-row {
             transition: background-color 0.2s ease;
         }
+
+        /* Booking form: dark date picker + selected service option */
+        input[type="date"] {
+            color-scheme: dark;
+        }
+
+        .service-option.selected {
+            border-color: #b45309;
+            background-color: rgba(180, 83, 9, 0.1);
+        }
         
         .service-row:hover {
             background-color: #1a1a1a;
@@ -1068,7 +1078,7 @@
 
     <!-- BOOKING / CUSTOM MODAL -->
     <div id="booking-modal" onclick="if (event.target.id === 'booking-modal') closeBookingModal()" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-[110] flex items-center justify-center p-4 md:p-6">
-        <div onclick="event.stopImmediatePropagation()" class="modal bg-[#111] border border-zinc-700 w-full max-w-lg rounded-3xl p-8 md:p-9">
+        <div onclick="event.stopImmediatePropagation()" class="modal bg-[#111] border border-zinc-700 w-full max-w-lg rounded-3xl p-8 md:p-9 max-h-[92vh] overflow-y-auto">
             <div class="flex justify-between items-start mb-7">
                 <div>
                     <div id="modal-title" class="font-semibold text-3xl tracking-tight">Book With Daddy</div>
@@ -1077,58 +1087,147 @@
                 <button onclick="closeBookingModal()" class="text-zinc-400 hover:text-white p-1">✕</button>
             </div>
 
-            <form id="booking-form" onsubmit="submitBooking(event)">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <form id="booking-form" onsubmit="submitBooking(event)" novalidate>
+                <!-- Service picker with prices -->
+                <div>
+                    <label class="text-xs text-zinc-400 block mb-1.5">PICK YOUR SERVICE</label>
+                    <div id="service-picker" class="grid grid-cols-1 gap-2">
+                        <button type="button" data-service="Video Chat — 10 min" data-price="$50" data-kind="video" onclick="pickService(this)" class="service-option w-full flex justify-between items-center border border-zinc-700 hover:border-zinc-500 rounded-2xl px-4 py-3 text-sm text-left transition">
+                            <span>Video Chat <span class="text-zinc-400">· 10 min</span></span><span class="font-semibold">$50</span>
+                        </button>
+                        <button type="button" data-service="Video Chat — 20 min" data-price="$70" data-kind="video" onclick="pickService(this)" class="service-option w-full flex justify-between items-center border border-zinc-700 hover:border-zinc-500 rounded-2xl px-4 py-3 text-sm text-left transition">
+                            <span>Video Chat <span class="text-zinc-400">· 20 min</span></span><span class="font-semibold">$70</span>
+                        </button>
+                        <button type="button" data-service="Video Chat — 30 min" data-price="$120" data-kind="video" onclick="pickService(this)" class="service-option w-full flex justify-between items-center border border-zinc-700 hover:border-zinc-500 rounded-2xl px-4 py-3 text-sm text-left transition">
+                            <span>Video Chat <span class="text-zinc-400">· 30 min</span></span><span class="font-semibold">$120</span>
+                        </button>
+                        <button type="button" data-service="Custom Video (5–15 min)" data-price="from $80" data-kind="custom" onclick="pickService(this)" class="service-option w-full flex justify-between items-center border border-zinc-700 hover:border-zinc-500 rounded-2xl px-4 py-3 text-sm text-left transition">
+                            <span>Custom Video <span class="text-zinc-400">· 5–15 min</span></span><span class="font-semibold">from $80</span>
+                        </button>
+                        <button type="button" data-service="In-Person Session (1 hr min)" data-price="$200–$500+" data-kind="inperson" onclick="pickService(this)" class="service-option w-full flex justify-between items-center border border-zinc-700 hover:border-zinc-500 rounded-2xl px-4 py-3 text-sm text-left transition">
+                            <span>In-Person Session <span class="text-zinc-400">· ATL / Chicago · deposits required</span></span><span class="font-semibold">$200–$500+</span>
+                        </button>
+                        <button type="button" data-service="other" data-price="" data-kind="other" onclick="pickService(this)" class="service-option w-full flex justify-between items-center border border-zinc-700 hover:border-zinc-500 rounded-2xl px-4 py-3 text-sm text-left transition">
+                            <span>Something else <span class="text-zinc-400">· VIP, merch, promo, management, virtual</span></span><span class="font-semibold">—</span>
+                        </button>
+                    </div>
+                    <input type="hidden" id="picked-service" value="">
+                    <input type="hidden" id="picked-price" value="">
+                    <input type="hidden" id="picked-kind" value="">
+                </div>
+
+                <!-- Other inquiry type (only when "something else" is picked) -->
+                <div id="other-service-wrap" class="hidden mt-4">
+                    <label class="text-xs text-zinc-400 block mb-1.5">WHAT IS THIS ABOUT?</label>
+                    <select id="service-type" class="w-full bg-black border border-zinc-700 text-white rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#b45309]">
+                        <option value="VIP Inquiry">VIP / OnlyFans Question</option>
+                        <option value="Custom Video">Custom Video</option>
+                        <option value="Video Chat">Video Chat Session</option>
+                        <option value="In-Person">In-Person Session (ATL/CHI)</option>
+                        <option value="Merch">Merch Inquiry</option>
+                        <option value="Other">Other / Custom Request</option>
+                    </select>
+                </div>
+
+                <!-- Date + time (only for bookable services) -->
+                <div id="datetime-wrap" class="hidden grid grid-cols-2 gap-4 mt-4">
                     <div>
-                        <label class="text-xs text-zinc-400 block mb-1.5">SERVICE TYPE</label>
-                        <select id="service-type" class="w-full bg-black border border-zinc-700 text-white rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#b45309]">
-                            <option value="VIP Inquiry">VIP / OnlyFans Question</option>
-                            <option value="Custom Video">Custom Video</option>
-                            <option value="Video Chat">Video Chat Session</option>
-                            <option value="In-Person">In-Person Session (ATL/CHI)</option>
-                            <option value="Merch">Merch Inquiry</option>
-                            <option value="Other">Other / Custom Request</option>
-                        </select>
+                        <label class="text-xs text-zinc-400 block mb-1.5">PREFERRED DATE</label>
+                        <input id="book-date" type="date"
+                               class="w-full bg-black border border-zinc-700 text-white rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#b45309]">
                     </div>
                     <div>
-                        <label class="text-xs text-zinc-400 block mb-1.5">PREFERRED LENGTH / BUDGET</label>
-                        <input id="length" type="text" placeholder="e.g. 15 min or $200" 
-                               class="w-full bg-black border border-zinc-700 text-white rounded-2xl px-4 py-3 text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#b45309]">
+                        <label class="text-xs text-zinc-400 block mb-1.5">PREFERRED TIME (EASTERN)</label>
+                        <select id="book-time" class="w-full bg-black border border-zinc-700 text-white rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#b45309]">
+                            <option value="">Pick a time</option>
+                            <option>12:00 PM</option>
+                            <option>1:00 PM</option>
+                            <option>2:00 PM</option>
+                            <option>3:00 PM</option>
+                            <option>4:00 PM</option>
+                            <option>5:00 PM</option>
+                            <option>6:00 PM</option>
+                            <option>7:00 PM</option>
+                            <option>8:00 PM</option>
+                            <option>9:00 PM</option>
+                            <option>10:00 PM</option>
+                            <option>11:00 PM</option>
+                        </select>
                     </div>
                 </div>
 
                 <div class="mt-4">
-                    <label class="text-xs text-zinc-400 block mb-1.5">DETAILS — BE SPECIFIC (INTERESTS, SCENARIOS, ROLEPLAY?)</label>
-                    <textarea id="details" rows="4" placeholder="Tell me what turns you on. Raw details welcome..." 
+                    <label class="text-xs text-zinc-400 block mb-1.5">NOTES — BE SPECIFIC (INTERESTS, SCENARIOS, ROLEPLAY?)</label>
+                    <textarea id="details" rows="4" placeholder="Tell me what turns you on. Raw details welcome..."
                               class="w-full resize-y bg-black border border-zinc-700 text-white rounded-3xl px-4 py-3 text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#b45309]"></textarea>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                     <div>
-                        <label class="text-xs text-zinc-400 block mb-1.5">YOUR X / TWITTER OR EMAIL</label>
-                        <input id="contact" required type="text" placeholder="@yourhandle or email@you.com" 
+                        <label class="text-xs text-zinc-400 block mb-1.5">YOUR NAME</label>
+                        <input id="client-name" type="text" placeholder="Your name" autocomplete="name"
                                class="w-full bg-black border border-zinc-700 text-white rounded-2xl px-4 py-3 text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#b45309]">
                     </div>
                     <div>
-                        <label class="text-xs text-zinc-400 block mb-1.5">LOCATION / TIMEZONE (if relevant)</label>
-                        <input id="location" type="text" placeholder="ATL / Chicago / Remote" 
+                        <label class="text-xs text-zinc-400 block mb-1.5">YOUR X / TWITTER (OPTIONAL)</label>
+                        <input id="client-x" type="text" placeholder="@yourhandle"
+                               class="w-full bg-black border border-zinc-700 text-white rounded-2xl px-4 py-3 text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#b45309]">
+                    </div>
+                    <div>
+                        <label class="text-xs text-zinc-400 block mb-1.5">EMAIL</label>
+                        <input id="client-email" type="email" placeholder="email@you.com" autocomplete="email"
+                               class="w-full bg-black border border-zinc-700 text-white rounded-2xl px-4 py-3 text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#b45309]">
+                    </div>
+                    <div>
+                        <label class="text-xs text-zinc-400 block mb-1.5">PHONE (OPTIONAL)</label>
+                        <input id="client-phone" type="tel" placeholder="(555) 123-4567" autocomplete="tel"
                                class="w-full bg-black border border-zinc-700 text-white rounded-2xl px-4 py-3 text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#b45309]">
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3 mt-7">
-                    <button type="submit" 
-                            class="flex-1 bg-[#9f1239] hover:bg-[#7f1d1d] text-white font-semibold tracking-[1px] py-[15px] rounded-2xl text-sm transition">
-                        SEND TO DADDY
+                <div class="mt-4">
+                    <label class="text-xs text-zinc-400 block mb-1.5">LOCATION / TIMEZONE (if relevant)</label>
+                    <input id="location" type="text" placeholder="ATL / Chicago / Remote"
+                           class="w-full bg-black border border-zinc-700 text-white rounded-2xl px-4 py-3 text-sm placeholder:text-zinc-600 focus:outline-none focus:border-[#b45309]">
+                </div>
+
+                <div id="booking-summary" class="hidden mt-5 rounded-2xl border border-zinc-700 bg-black px-4 py-3 text-sm">
+                    <span class="text-zinc-400">You picked:</span> <span id="summary-service" class="font-semibold"></span><span id="summary-price-wrap"> — <span id="summary-price" class="font-semibold text-[#b45309]"></span></span>
+                </div>
+
+                <p id="booking-error" class="hidden text-xs text-red-400 mt-4"></p>
+
+                <div class="flex items-center gap-3 mt-5">
+                    <button type="submit" id="booking-submit"
+                            class="flex-1 bg-[#9f1239] hover:bg-[#7f1d1d] disabled:opacity-60 text-white font-semibold tracking-[1px] py-[15px] rounded-2xl text-sm transition">
+                        SEND BOOKING REQUEST
                     </button>
-                    <button type="button" onclick="closeBookingModal()" 
+                    <button type="button" onclick="closeBookingModal()"
                             class="flex-1 border border-zinc-700 hover:bg-zinc-900 py-[15px] rounded-2xl text-xs tracking-widest">
                         CANCEL
                     </button>
                 </div>
 
-                <p class="text-[10px] text-center text-zinc-500 mt-5">Your request goes straight to me. I reply personally. 18+ only.</p>
+                <p class="text-[10px] text-center text-zinc-500 mt-5">Your request goes straight to me. I reply personally. 18+ only. No payment is taken here — I confirm the time and payment with you first.</p>
             </form>
+
+            <!-- Confirmation view (shown after a request is sent) -->
+            <div id="booking-confirmation" class="hidden text-center">
+                <div class="w-14 h-14 mx-auto bg-emerald-900/60 border border-emerald-700 rounded-full flex items-center justify-center mb-5"><span class="text-2xl text-emerald-400">✓</span></div>
+                <div class="text-3xl font-bold tracking-tight">Request received</div>
+                <p class="mt-2 text-sm text-zinc-400">Your booking request is on its way to me. I reply personally, usually within 24 hours, to confirm the time and payment.</p>
+                <div class="mt-6 text-left rounded-2xl border border-zinc-700 bg-black p-5 text-sm space-y-2">
+                    <div class="flex justify-between gap-4"><span class="text-zinc-400">Reference</span><span id="confirm-ref" class="font-mono font-semibold"></span></div>
+                    <div class="flex justify-between gap-4"><span class="text-zinc-400">Service</span><span id="confirm-service" class="font-semibold text-right"></span></div>
+                    <div id="confirm-price-row" class="flex justify-between gap-4"><span class="text-zinc-400">Price</span><span id="confirm-price" class="font-semibold"></span></div>
+                    <div id="confirm-date-row" class="flex justify-between gap-4"><span class="text-zinc-400">Date</span><span id="confirm-date" class="font-semibold"></span></div>
+                    <div id="confirm-time-row" class="flex justify-between gap-4"><span class="text-zinc-400">Time</span><span id="confirm-time" class="font-semibold"></span></div>
+                    <div class="flex justify-between gap-4"><span class="text-zinc-400">Name</span><span id="confirm-name" class="font-semibold"></span></div>
+                </div>
+                <p id="confirm-mailto-note" class="hidden mt-4 text-xs text-zinc-400">Your email app opened too — hit send there if it did, so nothing gets lost.</p>
+                <button onclick="closeBookingModal()" class="mt-7 w-full py-[15px] rounded-2xl text-sm bg-white text-black font-semibold tracking-[1.5px] hover:bg-zinc-200">DONE</button>
+                <a href="https://onlyfans.com/daddybackwood" target="_blank" rel="noopener" class="mt-3 block text-sm text-zinc-400 hover:text-white underline underline-offset-4">Want instant access while you wait? Join VIP →</a>
+            </div>
         </div>
     </div>
 
@@ -1220,27 +1319,86 @@
         // Booking modal
         let currentService = '';
 
+        // Booking requests are delivered to daddybackwood@gmail.com through
+        // FormSubmit (no account or backend needed). The first submission
+        // needs Malik to click the activation link FormSubmit emails to that inbox.
+        const BOOKING_ENDPOINT = 'https://formsubmit.co/ajax/daddybackwood@gmail.com';
+        const BOOKING_EMAIL = 'daddybackwood@gmail.com';
+
+        function pickService(btn) {
+            document.querySelectorAll('#service-picker .service-option').forEach(function (opt) {
+                opt.classList.remove('selected');
+            });
+            btn.classList.add('selected');
+
+            const kind = btn.getAttribute('data-kind');
+            document.getElementById('picked-service').value = btn.getAttribute('data-service');
+            document.getElementById('picked-price').value = btn.getAttribute('data-price');
+            document.getElementById('picked-kind').value = kind;
+
+            const otherWrap = document.getElementById('other-service-wrap');
+            const dateWrap = document.getElementById('datetime-wrap');
+            const summary = document.getElementById('booking-summary');
+            if (kind === 'other') {
+                otherWrap.classList.remove('hidden');
+                dateWrap.classList.add('hidden');
+                summary.classList.add('hidden');
+            } else {
+                otherWrap.classList.add('hidden');
+                dateWrap.classList.remove('hidden');
+                document.getElementById('summary-service').textContent = btn.getAttribute('data-service');
+                document.getElementById('summary-price').textContent = btn.getAttribute('data-price');
+                document.getElementById('summary-price-wrap').style.display = btn.getAttribute('data-price') ? '' : 'none';
+                summary.classList.remove('hidden');
+            }
+            hideBookingError();
+        }
+
+        function pickServiceByKind(kind, label) {
+            const btns = document.querySelectorAll('#service-picker .service-option');
+            for (const btn of btns) {
+                if (btn.getAttribute('data-kind') === kind && (!label || btn.getAttribute('data-service').indexOf(label) !== -1)) {
+                    pickService(btn);
+                    return;
+                }
+            }
+        }
+
+        function hideBookingError() {
+            const err = document.getElementById('booking-error');
+            err.classList.add('hidden');
+            err.textContent = '';
+        }
+
+        function showBookingError(msg) {
+            const err = document.getElementById('booking-error');
+            err.textContent = msg;
+            err.classList.remove('hidden');
+        }
+
         function openBookingModal(serviceType = '') {
             const modal = document.getElementById('booking-modal');
             const title = document.getElementById('modal-title');
             const subtitle = document.getElementById('modal-subtitle');
-            const select = document.getElementById('service-type');
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
 
+            // Date picker starts at today
+            document.getElementById('book-date').min = new Date().toISOString().split('T')[0];
+
             if (serviceType === 'custom-video') {
                 title.textContent = 'Request a Custom';
                 subtitle.textContent = 'Share your specific interests and preferences.';
-                select.value = 'Custom Video';
+                pickServiceByKind('custom');
             } else if (serviceType === 'video-chat') {
                 title.textContent = 'Book Live Video Chat';
                 subtitle.textContent = '10–30 min. Tell me your fantasy.';
-                select.value = 'Video Chat';
+                pickServiceByKind('video', '20 min');
             } else if (serviceType === 'in-person') {
                 title.textContent = 'In-Person Session';
                 subtitle.textContent = 'ATL / Chicago. Discreet & intense.';
-                select.value = 'In-Person';
+                pickServiceByKind('inperson');
             } else {
                 title.textContent = 'Book With Daddy';
                 subtitle.textContent = 'Tell me exactly what you want.';
@@ -1251,64 +1409,146 @@
             const modal = document.getElementById('booking-modal');
             modal.classList.remove('flex');
             modal.classList.add('hidden');
-            // reset form
+            // reset form + picker + confirmation view
             document.getElementById('booking-form').reset();
+            document.getElementById('booking-form').classList.remove('hidden');
+            document.getElementById('booking-confirmation').classList.add('hidden');
+            document.getElementById('confirm-mailto-note').classList.add('hidden');
+            document.querySelectorAll('#service-picker .service-option').forEach(function (opt) {
+                opt.classList.remove('selected');
+            });
+            document.getElementById('picked-service').value = '';
+            document.getElementById('picked-price').value = '';
+            document.getElementById('picked-kind').value = '';
+            document.getElementById('other-service-wrap').classList.add('hidden');
+            document.getElementById('datetime-wrap').classList.add('hidden');
+            document.getElementById('booking-summary').classList.add('hidden');
+            hideBookingError();
+            const submitBtn = document.getElementById('booking-submit');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'SEND BOOKING REQUEST';
+        }
+
+        function showBookingConfirmation(booking, usedMailto) {
+            document.getElementById('confirm-ref').textContent = booking.ref;
+            document.getElementById('confirm-service').textContent = booking.service;
+            document.getElementById('confirm-price').textContent = booking.price || '—';
+            document.getElementById('confirm-price-row').style.display = booking.price ? '' : 'none';
+            document.getElementById('confirm-date').textContent = booking.date || '—';
+            document.getElementById('confirm-date-row').style.display = booking.date ? '' : 'none';
+            document.getElementById('confirm-time').textContent = booking.time || '—';
+            document.getElementById('confirm-time-row').style.display = booking.time ? '' : 'none';
+            document.getElementById('confirm-name').textContent = booking.name;
+            if (usedMailto) document.getElementById('confirm-mailto-note').classList.remove('hidden');
+            document.getElementById('booking-form').classList.add('hidden');
+            document.getElementById('booking-confirmation').classList.remove('hidden');
         }
 
         function submitBooking(e) {
             e.preventDefault();
+            hideBookingError();
 
-            const form = document.getElementById('booking-form');
-            const toast = document.getElementById('success-toast');
+            const kind = document.getElementById('picked-kind').value;
+            let service = document.getElementById('picked-service').value;
+            const price = document.getElementById('picked-price').value;
+            if (kind === 'other') {
+                service = document.getElementById('service-type').value;
+            }
+            if (!service) {
+                showBookingError('Pick a service first.');
+                return;
+            }
+            const isBookable = kind === 'video' || kind === 'custom' || kind === 'inperson';
+            const date = document.getElementById('book-date').value;
+            const time = document.getElementById('book-time').value;
+            if (isBookable && !date) {
+                showBookingError('Pick a preferred date.');
+                return;
+            }
+            if (isBookable && !time) {
+                showBookingError('Pick a preferred time.');
+                return;
+            }
+            const name = document.getElementById('client-name').value.trim();
+            const email = document.getElementById('client-email').value.trim();
+            const phone = document.getElementById('client-phone').value.trim();
+            const xHandle = document.getElementById('client-x').value.trim();
+            const details = document.getElementById('details').value.trim();
+            const location = document.getElementById('location').value.trim();
+            if (!name) {
+                showBookingError('Add your name so I know who is booking.');
+                return;
+            }
+            if (!email && !phone) {
+                showBookingError('Add an email or a phone number so I can reach you back.');
+                return;
+            }
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showBookingError('That email does not look right — check it and try again.');
+                return;
+            }
 
-            // Send the request to Daddy by email — opens the visitor's mail app addressed to daddybackwood@gmail.com
-            const service = document.getElementById('service-type').value;
-            const length = document.getElementById('length').value;
-            const details = document.getElementById('details').value;
-            const contact = document.getElementById('contact').value;
-            const location = document.getElementById('location').value;
-            const body = 'Service: ' + service + '\nLength / Budget: ' + length + '\nDetails: ' + details + '\nContact (X / email): ' + contact + '\nLocation / Timezone: ' + location;
-            window.location.href = 'mailto:daddybackwood@gmail.com?subject=' + encodeURIComponent('Booking request — ' + service) + '&body=' + encodeURIComponent(body);
+            const ref = 'DB-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+            const booking = { ref: ref, service: service, price: price, date: date, time: time, name: name };
+            const submitBtn = document.getElementById('booking-submit');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'SENDING…';
 
-            closeBookingModal();
+            const bodyText = 'Booking reference: ' + ref + '\nService: ' + service + (price ? ' (' + price + ')' : '') + '\nPreferred date: ' + (date || '—') + '\nPreferred time (Eastern): ' + (time || '—') + '\nName: ' + name + '\nEmail: ' + (email || '—') + '\nPhone: ' + (phone || '—') + '\nX / Twitter: ' + (xHandle || '—') + '\nLocation / Timezone: ' + (location || '—') + '\nNotes: ' + (details || '—');
 
-            setTimeout(() => {
-                toast.classList.remove('hidden');
-                toast.classList.add('flex');
-                
-                setTimeout(() => {
-                    toast.style.transition = 'all 0.3s ease';
-                    toast.style.opacity = '0';
-                    
-                    setTimeout(() => {
-                        toast.classList.remove('flex');
-                        toast.classList.add('hidden');
-                        toast.style.opacity = '1';
-                        toast.style.transition = '';
-                        
-                        // After successful inquiry, strongly push to VIP
-                        setTimeout(() => {
-                            if (confirm('Want instant access to everything while you wait for my reply?')) {
-                                window.open('https://onlyfans.com/daddybackwood', '_blank');
-                            }
-                        }, 650);
-                    }, 320);
-                }, 3000);
-            }, 420);
+            const payload = {
+                _subject: 'Booking request ' + ref + ' — ' + service,
+                _template: 'table',
+                _captcha: 'false',
+                _honey: '',
+                service: service,
+                price: price || '—',
+                date: date || '—',
+                time: time ? time + ' Eastern' : '—',
+                name: name,
+                email: email || '—',
+                phone: phone || '—',
+                x_handle: xHandle || '—',
+                location: location || '—',
+                notes: details || '—',
+                reference: ref
+            };
+            // Note: FormSubmit's _autoresponse does not work with AJAX
+            // submissions, so the on-screen confirmation panel is the
+            // client's confirmation (no confirmation email is sent).
+
+            fetch(BOOKING_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(function (res) {
+                if (!res.ok) throw new Error('send failed');
+                showBookingConfirmation(booking, false);
+            }).catch(function () {
+                // Delivery service unreachable — fall back to the visitor's mail app
+                window.location.href = 'mailto:' + BOOKING_EMAIL + '?subject=' + encodeURIComponent('Booking request ' + ref + ' — ' + service) + '&body=' + encodeURIComponent(bodyText);
+                showBookingConfirmation(booking, true);
+            }).finally(function () {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'SEND BOOKING REQUEST';
+            });
         }
 
         function openMerchModal() {
             const modal = document.getElementById('booking-modal');
             const title = document.getElementById('modal-title');
             const subtitle = document.getElementById('modal-subtitle');
-            const select = document.getElementById('service-type');
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
 
+            // Date picker starts at today
+            document.getElementById('book-date').min = new Date().toISOString().split('T')[0];
+
             title.textContent = 'Merch Inquiry';
             subtitle.textContent = 'Limited pieces. DM for sizing & availability.';
-            select.value = 'Merch';
+            pickServiceByKind('other');
+            document.getElementById('service-type').value = 'Merch';
         }
 
         // Smooth scroll for anchor links
